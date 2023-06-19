@@ -1,0 +1,164 @@
+---
+title: "File_T-A_data"
+author: "Mariella"
+date: "6/12/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("readxl")
+library(dplyr)
+library(tidyverse)
+library(investr)
+library(googlesheets4)
+library(xtable)
+library("psych")
+library(DSSAT)
+planting_c2021 <- '2021-06-08' 
+planting_s2022 <- '2022-06-29'
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+all_data <- 'https://docs.google.com/spreadsheets/d/1Ngwz6VnsComxVJUsUqr8Q_U3ehnMxq-TDR0J7pMikjo/edit?usp=share_link'
+
+sp_all_2021 <-read_sheet(all_data, sheet = 'Caswell_2021')
+sp_all_2021 <- sp_all_2021 %>% mutate_at(c(3:21), as.numeric)
+sp_all_2021$DAT <- as.numeric(as.Date(sp_all_2021$Date)-as.Date(planting_c2021))
+names(sp_all_2021)[names(sp_all_2021) == 'DW_below'] <- 'DW_roots'
+
+sp_all_2022 <- read_sheet(all_data, sheet = 'Sandhills_2022',range = cell_cols("A:S"))
+sp_all_2022$DAT <- as.numeric(as.Date(sp_all_2022$Date)-as.Date(planting_s2022))
+names(sp_all_2022)[names(sp_all_2022) == 'DW_below'] <- 'DW_roots'
+sp_all_2022 <- sp_all_2022[sp_all_2022$DAT != 16,]
+
+# biomass gr per plant average
+sp_all_2021_m2_bl <- sp_all_2021 %>% group_by(Date,DAT,Cultivar,Block) %>% summarise_all(mean,na.rm=TRUE)
+sp_all_2021_m2_bl <- sp_all_2021_m2_bl %>% mutate(across(FW_whole:n_pencils,~ .x*3))
+
+sp_all_2021_m2 <- sp_all_2021_m2_bl %>% group_by(Date,DAT,Cultivar) %>% summarise_all(mean,na.rm=TRUE)
+sp_all_2022_m2 <- sp_all_2022 %>% group_by(Date,DAT,Cultivar) %>% summarise_if(is.numeric,sum)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+grades_caswell_2021 <- 'https://docs.google.com/spreadsheets/d/1Q_ilQ7Pv5LQt1lZWYlpuAAKNUtKPeUN_m_25htN-DGg/edit?usp=share_link'
+grades_sandhills_2022 <- 'https://docs.google.com/spreadsheets/d/1-r8t3kRSJD3Fc3C2BftguN_gjmWdg8_509uUw0TlLIQ/edit?usp=share_link'
+grades_caswell <- read_sheet(grades_caswell_2021)
+grades_sandhills <- read_sheet(grades_sandhills_2022)
+grade_vars <- c("Variety","Block","weight_all")
+
+grades_caswell <- grades_caswell[,grade_vars]
+grades_sandhills <- grades_sandhills[,grade_vars]
+
+grades_caswell <- grades_caswell %>% mutate(weight.all=weight_all/35.274,yield =weight.all*10/25)
+yield_2021_1 <- grades_caswell[,c("Block","Variety","yield")]
+yield_2021_1[order(yield_2021_1$Block,yield_2021_1$Variety),]
+
+grades_caswell <- grades_caswell %>% group_by(Variety) %>% summarise_all(mean,na.rm=TRUE) ###
+grades_sandhills <- grades_sandhills %>% mutate(weight.all=weight_all/35.274,yield =weight.all*10/13.33)
+
+yield_2021 <- grades_caswell[,c("Variety","yield")]
+yield_2022 <- grades_sandhills[,c("Variety","yield")]
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+library(growthrates)
+df1<-sp_all_2021_m2
+df2<-sp_all_2022_m2
+
+df11 <- sp_all_2021_m2_bl
+
+#converting to kg/ha and Mg/ha
+df1_0 = df1[,c("Cultivar","Date", "DW_above","DW_roots","FW_below")]
+df1_0 <- df1_0 %>% mutate(DW_above = round(DW_above*10,2),DW_roots = round(DW_roots*10,2), FW_below = round(FW_below/100,2))
+
+df2_0 = df2[,c("Cultivar","Date", "DW_above","DW_roots","FW_below")]
+df2_0 <- df2_0 %>% mutate(DW_above = round(DW_above*10,2),DW_roots = round(DW_roots*10,2), FW_below = round(FW_below/100,2))
+
+df11_0 = df11[,c("Block","Cultivar","Date", "DW_above","DW_roots","FW_below")]
+df11_0 <- df11_0 %>% mutate(DW_above = round(DW_above*10,2),DW_roots = round(DW_roots*10,2), FW_below = round(FW_below/100,2))
+
+
+colT <- c("TRNO","DATE","CWAD","UWAD","UYAD")
+colA <- c("TRNO","HDAT","UYAH")
+cultivars <- unique(df1$Cultivar)
+cn <- 1
+sample_filet <- system.file('extdata','SAMPLE.CRT',package='DSSAT')
+filet <- read_filet(sample_filet)
+sample_filea <- system.file('extdata','SAMPLE.CRA',package='DSSAT')
+filea <- read_filea(sample_filea)
+for (cc in cultivars){
+  ################### file T  ###############################
+  fileT_2021 <- paste0("NCKI","210",as.character(cn),".CRT")
+  fileT_2022 <- paste0("NCSA","220",as.character(cn),".CRT")
+  fileT_2021_1 <- paste0("NCKI","211",as.character(cn),".CRT")
+  
+  dataT_2021 <- subset(df1_0,Cultivar == cc)
+  dataT_2021 <- cbind(TRNO=1, dataT_2021[,2:5]) 
+  names(dataT_2021) <- colT 
+  dataT_2021[is.nan(dataT_2021)] <- NA
+  dataT_2021 <- add_v_fmt(dataT_2021, v_fmt =c(TRNO='%6.0f',DATE='%6s',CWAD='%6.0f',UWAD='%6.0f',UYAD='%6.1f'))
+  
+  dataT_2022 <- subset(df2_0,Cultivar == cc)
+  dataT_2022 <- cbind(TRNO=1, dataT_2022[,2:5]) 
+  names(dataT_2022) <- colT 
+  dataT_2022 <- add_v_fmt(dataT_2022, v_fmt =c(TRNO='%6.0f',DATE='%6s',CWAD='%6.0f',UWAD='%6.0f',UYAD='%6.1f'))
+  
+  dataT_2021_1 <- subset(df11_0,Cultivar == cc)
+  dataT_2021_1 <- cbind(TRNO=dataT_2021_1[,1], dataT_2021_1[,3:6]) 
+  names(dataT_2021_1) <- colT
+  dataT_2021_1 <-  dataT_2021_1[order(dataT_2021_1$TRNO,dataT_2021_1$DATE),]
+  dataT_2021_1[is.nan(dataT_2021_1)] <- NA
+  dataT_2021_1 <- add_v_fmt(dataT_2021_1, v_fmt =c(TRNO='%6.0f',DATE='%6s',CWAD='%6.0f',UWAD='%6.0f',UYAD='%6.1f'))
+  
+  write_filet(dataT_2021,fileT_2021)
+  write_filet(dataT_2022,fileT_2022)
+  write_filet(dataT_2021_1,fileT_2021_1)
+
+  ################### file A  ###############################
+  fileA_2021 <- paste0("NCKI","210",as.character(cn),".CRA")
+  fileA_2022 <- paste0("NCSA","220",as.character(cn),".CRA")
+  fileA_2021_1 <- paste0("NCKI","211",as.character(cn),".CRA")
+  
+  dataA_2021 <- subset(yield_2021,Variety == cc)
+  dataA_2021 <- cbind(TRNO=1, HDAT=21277,UYAH=dataA_2021[,2]) 
+  names(dataA_2021) <- colA 
+  dataA_2021[is.nan(dataA_2021)] <- NA
+  dataA_2021 <- add_v_fmt(dataA_2021, v_fmt =c(TRNO='%6.0f',HDAT='%6s',UYAH='%6.1f'))
+  
+  dataA_2022 <- subset(yield_2022,Variety == cc)
+  dataA_2022 <- cbind(TRNO=1, HDAT=22285,UYAH=dataA_2022[,2]) 
+  names(dataA_2022) <- colA 
+  dataA_2022[is.nan(dataA_2022)] <- NA
+  dataA_2022 <- add_v_fmt(dataA_2022, v_fmt =c(TRNO='%6.0f',HDAT='%6s',UYAH='%6.1f'))
+  
+  dataA_2021_1 <- subset(yield_2021_1,Variety == cc)
+  dataA_2021_1 <- cbind(TRNO=dataA_2021_1[,1], HDAT=21277,UYAH=dataA_2021_1[,3]) 
+  names(dataA_2021_1) <- colA 
+  dataA_2021_1[is.nan(dataA_2021_1)] <- NA
+  dataA_2021_1 <- add_v_fmt(dataA_2021_1, v_fmt =c(TRNO='%6.0f',HDAT='%6s',UYAH='%6.1f'))
+  
+  write_filea(dataA_2021,fileA_2021)
+  write_filea(dataA_2022,fileA_2022)
+  write_filea(dataA_2021_1,fileA_2021_1)
+  
+  cn <- cn + 1
+}
+
+
+```
+

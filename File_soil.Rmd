@@ -1,0 +1,378 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This 
+
+```{r global_options, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(out.width = "100%", fig.height = 7, fig.path = 'figures/', echo = TRUE, warning = FALSE, message = FALSE)
+#fig.with = 25, fig.height = 7
+library(googlesheets4)
+library(dplyr)
+library(tibble)
+library(soilDB)
+library(aqp)
+library(sharpshootR)
+library(sf)
+library(DSSAT)
+library(raster)
+#https://rpubs.com/emchasen/SSURGOcleaning
+library(FedData)
+library(dplyr)
+
+#create and save functions
+not_all_na <- function(x) any(!is.na(x))
+
+CN <-function(GRP){
+#SCS TR-55 Table 2-2b – Runoff curve numbers for cultivated agricultural lands: Row crops:Straight row (SR):Good
+    if (GRP == 'A'){
+    CN = 67
+  } else if (GRP == 'B'){
+    CN = 78
+  } else if (GRP == 'C'){
+    CN = 85
+  } else if (GRP == 'D'){
+    CN = 89
+  }
+  return(CN)
+}
+
+```
+
+## CASWELL 2021
+```{r}
+xx <- -77.617
+yy <- 35.281
+p <- st_as_sf(data.frame(x = xx, y = yy), coords = c('x', 'y'), crs = 4326)
+b <- st_buffer(p, dist = units::set_units(50, m))
+bb <- st_transform(b, crs = "+proj=longlat +datum=WGS84")
+#bb<-polygon_from_extent(extent(b),proj4string= "+proj=longlat +datum=WGS84" )
+
+ssurgo_bb <- get_ssurgo(template=bb, label='caswell_ssurgo') 
+
+# Let's just look at spatial data
+SSURGO.areas <- ssurgo_bb$spatial[ssurgo_bb$spatial$AREASYMBOL == "NC107", ]
+# And get the NED data under them for pretty plotting
+NED <- get_ned(template = SSURGO.areas, label = "SSURGO_NC107")
+# Plot the SSURGO mapunit polygons, but only for CO675
+plot(NED)
+plot(SSURGO.areas, lwd = 0.1, add = T)
+
+chorizon <- ssurgo_bb$tabular$chorizon
+component <- ssurgo_bb$tabular$component
+mapunit <- ssurgo_bb$tabular$mapunit
+
+muag <- ssurgo_bb$tabular$muaggatt
+
+chtexturegrp <- ssurgo_bb$tabular$chtexturegrp ##how to use it?
+
+chorizon <- chorizon %>% select_if(not_all_na)
+component <- component %>% select_if(not_all_na)
+mapunit <- mapunit %>% select_if(not_all_na)
+#deepest horizon bottom of each component
+depth <- chorizon %>% group_by(cokey) %>% summarise(total.depth = max(hzdepb.r))
+#remove horizons that start below 30 cm
+#chorizon <- chorizon %>% filter(hzdept.r < 30) %>% droplevels()
+
+keep_hz<-c("cokey","hzdept.r","hzdepb.r","hzthk.r","sandtotal.r","silttotal.r","claytotal.r","om.r","ksat.r","cec7.r","ph1to1h2o.r","desgnmaster","wfifteenbar.r","wthirdbar.r","wsatiated.r","dbthirdbar.r")
+
+chorizon <- chorizon %>% dplyr::select(keep_hz) %>% arrange(cokey, hzdept.r)
+
+# chorizon <- chorizon %>%
+#   mutate(thick = ifelse(hzdepb.r > 30, 30 - hzdept.r, 
+#                         hzdepb.r - hzdept.r)) %>% group_by(cokey) %>%
+#   summarise(sand = round(weighted.mean(sandtotal.r, thick, na.rm = TRUE),2),
+#             silt = round(weighted.mean(silttotal.r, thick, na.rm = TRUE),2),
+#             clay = round(weighted.mean(claytotal.r, thick, na.rm = TRUE),2),
+#             om = round(weighted.mean(om.r, thick, na.rm = TRUE),2),
+#             ksat = round(weighted.mean(ksat.r, thick, na.rm = TRUE),2),
+#             k = round(weighted.mean(kffact, thick, na.rm = TRUE),2),
+#             cec = round(weighted.mean(cec7.r, thick, na.rm = TRUE),2),
+#             ph = round(weighted.mean(ph1to1h2o.r, thick),2))
+chorizon <- left_join(chorizon, depth, by = "cokey")
+
+## Component data
+keep_comp <- c("taxorder","comppct.r", "compname", "slope.r", 
+                  "runoff", "tfact", "wei", "weg", "drainagecl",
+                  "elev.r", "albedodry.r", "airtempa.r", "map.r", "ffd.r", 
+                  "taxpartsize", "mukey", "cokey")
+component <- component %>%
+  dplyr::select(keep_comp)
+
+muag <- muag %>%
+  dplyr::select(c(hydgrpdcd,aws050wta,mukey))
+muag$CurveNumber<-as.numeric(sapply(muag$hydgrpdcd,CN)) #Transformed to numbers with CN function
+
+# drainage rate (SLDR) in fraction per day
+# dlyavgpotet_r (evaporation)-- esta vacia la table comonth
+###?? evaporation limit (SLU1),soil drainage rate
+
+component_horizon <- left_join(component, chorizon, by = c("cokey"))
+
+##Mapunit data
+mapunit <- mapunit %>%
+  dplyr::select(c(musym, muname, muacres, mukey))
+
+comp_hor_mapu <- left_join(component_horizon, mapunit, by = c("mukey"))
+comp_hor_mapu <- comp_hor_mapu %>% mutate(muname = gsub(", ", "_", muname))
+
+full_soil<- left_join(comp_hor_mapu,muag, by = c("mukey"))
+
+### select unit
+ssurgo_one <- full_soil[full_soil$compname=='Pocalla',]
+attach(ssurgo_one)
+nhor<-nrow(ssurgo_one)
+# Data not available in SSURGO
+texture<-NA #texture: from the first horizon, diffucult to interpret 19 rows
+color<-NA
+#drainagecl<-NULL
+#evapotranspiration dlyavgpotet_r, from comonth table, all values are NaN
+dlyavgpotet_r<-NA
+drainaige_rate<-NA
+mineralization_factor<- NA
+photosynthesis_factor <- NA
+pH_determ_code <-NA
+P_determ_code <- NA
+K_determ_code <- NA
+root_growth_factor<-rep(NA,nhor)
+soc_from_om<-round(om.r/1.72,2)  #SOM was estimated by multiplying soil organic carbon concentrations by the van Bemmelen factor (1.72)
+coarse_fraction<-rep(NA,nhor)  ## or 100-sieveno10_r (~0, but files use -99)
+total_nitrigen <- rep(NA,nhor)
+pH_in_buffer <- rep(NA,nhor)
+sadc <- rep(NA,nhor)
+
+SSURGO_vars <-c('NCKI210100','US',unique(taxpartsize),unique(total.depth),
+                paste('SSURGO+SoilGrids:',unique(taxorder),unique(compname)),
+                'Kinston,NC','US',yy,xx,unique(taxorder),color,unique(albedodry.r),
+                dlyavgpotet_r,drainaige_rate,unique(CurveNumber),mineralization_factor,
+                photosynthesis_factor,pH_determ_code,P_determ_code,K_determ_code,
+                list(hzdepb.r),list(desgnmaster),list(round(wfifteenbar.r/100,3)),
+                list(round(wthirdbar.r/100,3)), list(round(wsatiated.r/100,3)),
+                list(root_growth_factor),list(ksat.r*0.36),list(dbthirdbar.r),
+                list(soc_from_om),list(claytotal.r),list(silttotal.r),
+                list(coarse_fraction),list(total_nitrigen),
+                list(ph1to1h2o.r),list(pH_in_buffer),list(cec7.r),list(sadc))
+#Verify units!!
+```
+
+Add 
+```{r}
+#Base soil table from soilGrids
+soilgrids_sol <- read_sol('E:/PhD_research/Chapter2/inputs/SoilGrids-for-DSSAT/US.SOL', id_soil = 'US02835148')
+DSSAT_vars <- names(soilgrids_sol)
+DSSAT_SSURGO_vars <-data.frame(vars = DSSAT_vars,vals_ssurgo = as.character(SSURGO_vars))
+new_soil<- soilgrids_sol
+for (vv in DSSAT_vars){
+  index <- which(DSSAT_SSURGO_vars$vars==vv)
+  new_soil[[vv]] <- list(SSURGO_vars[[index]])
+  new_soil[[vv]] <- ifelse(is.na(new_soil[[vv]]), soilgrids_sol[[vv]],new_soil[[vv]])
+  nly<-length(new_soil[[vv]][[1]])
+  if (nly>1){
+    new_soil[[vv]][[1]] <- ifelse(is.na(new_soil[[vv]][[1]]), soilgrids_sol[[vv]][[1]],new_soil[[vv]][[1]])
+  }
+}
+
+write_sol(new_soil,title='ExpKinston2021_SoilGrids+SSURGO','NC.SOL')
+```
+
+## SANDHILLS 2022
+```{r}
+xx <- -79.679
+yy <- 35.184
+p <- st_as_sf(data.frame(x = xx, y = yy), coords = c('x', 'y'), crs = 4326)
+b <- st_buffer(p, dist = units::set_units(50, m))
+bb <- st_transform(b, crs = "+proj=longlat +datum=WGS84")
+#bb<-polygon_from_extent(extent(b),proj4string= "+proj=longlat +datum=WGS84" )
+
+ssurgo_bb <- get_ssurgo(template=bb, label='sandhills_ssurgo') 
+
+# Let's just look at spatial data
+SSURGO.areas <- ssurgo_bb$spatial[ssurgo_bb$spatial$AREASYMBOL == "NC123", ]
+# And get the NED data under them for pretty plotting
+NED <- get_ned(template = SSURGO.areas, label = "SSURGO_NC123")
+# Plot the SSURGO mapunit polygons, but only for CO675
+plot(NED)
+plot(SSURGO.areas, lwd = 0.1, add = T)
+
+chorizon <- ssurgo_bb$tabular$chorizon
+component <- ssurgo_bb$tabular$component
+mapunit <- ssurgo_bb$tabular$mapunit
+
+muag <- ssurgo_bb$tabular$muaggatt
+
+chtexturegrp <- ssurgo_bb$tabular$chtexturegrp ##how to use it?
+
+chorizon <- chorizon %>% select_if(not_all_na)
+component <- component %>% select_if(not_all_na)
+mapunit <- mapunit %>% select_if(not_all_na)
+#deepest horizon bottom of each component
+depth <- chorizon %>% group_by(cokey) %>% summarise(total.depth = max(hzdepb.r))
+#remove horizons that start below 30 cm
+#chorizon <- chorizon %>% filter(hzdept.r < 30) %>% droplevels()
+
+keep_hz<-c("cokey","hzdept.r","hzdepb.r","hzthk.r","sandtotal.r","silttotal.r","claytotal.r","om.r","ksat.r","cec7.r","ph1to1h2o.r","desgnmaster","wfifteenbar.r","wthirdbar.r","wsatiated.r","dbthirdbar.r")
+
+chorizon <- chorizon %>% dplyr::select(keep_hz) %>% arrange(cokey, hzdept.r)
+
+# chorizon <- chorizon %>%
+#   mutate(thick = ifelse(hzdepb.r > 30, 30 - hzdept.r, 
+#                         hzdepb.r - hzdept.r)) %>% group_by(cokey) %>%
+#   summarise(sand = round(weighted.mean(sandtotal.r, thick, na.rm = TRUE),2),
+#             silt = round(weighted.mean(silttotal.r, thick, na.rm = TRUE),2),
+#             clay = round(weighted.mean(claytotal.r, thick, na.rm = TRUE),2),
+#             om = round(weighted.mean(om.r, thick, na.rm = TRUE),2),
+#             ksat = round(weighted.mean(ksat.r, thick, na.rm = TRUE),2),
+#             k = round(weighted.mean(kffact, thick, na.rm = TRUE),2),
+#             cec = round(weighted.mean(cec7.r, thick, na.rm = TRUE),2),
+#             ph = round(weighted.mean(ph1to1h2o.r, thick),2))
+chorizon <- left_join(chorizon, depth, by = "cokey")
+
+## Component data
+keep_comp <- c("taxorder","comppct.r", "compname", "slope.r", 
+                  "runoff", "tfact", "wei", "weg", "drainagecl",
+                  "elev.r", "albedodry.r", "airtempa.r", "map.r", "ffd.r", 
+                  "taxpartsize", "mukey", "cokey")
+component <- component %>%
+  dplyr::select(keep_comp)
+
+muag <- muag %>%
+  dplyr::select(c(hydgrpdcd,aws050wta,mukey))
+muag$CurveNumber<-as.numeric(sapply(muag$hydgrpdcd,CN)) #Transformed to numbers with CN function
+
+# drainage rate (SLDR) in fraction per day
+# dlyavgpotet_r (evaporation)-- esta vacia la table comonth
+###?? evaporation limit (SLU1),soil drainage rate
+
+component_horizon <- left_join(component, chorizon, by = c("cokey"))
+
+##Mapunit data
+mapunit <- mapunit %>%
+  dplyr::select(c(musym, muname, muacres, mukey))
+
+comp_hor_mapu <- left_join(component_horizon, mapunit, by = c("mukey"))
+comp_hor_mapu <- comp_hor_mapu %>% mutate(muname = gsub(", ", "_", muname))
+
+full_soil<- left_join(comp_hor_mapu,muag, by = c("mukey"))
+
+### select unit
+ssurgo_one <- full_soil[full_soil$compname=='Candor',]
+attach(ssurgo_one)
+nhor<-nrow(ssurgo_one)
+# Data not available in SSURGO
+texture<-NA #texture: from the first horizon, diffucult to interpret 19 rows
+color<-NA
+#drainagecl<-NULL
+#evapotranspiration dlyavgpotet_r, from comonth table, all values are NaN
+dlyavgpotet_r<-NA
+drainaige_rate<-NA
+mineralization_factor<- NA
+photosynthesis_factor <- NA
+pH_determ_code <-NA
+P_determ_code <- NA
+K_determ_code <- NA
+root_growth_factor<-rep(NA,nhor)
+soc_from_om<-round(om.r/1.72,2)  #SOM was estimated by multiplying soil organic carbon concentrations by the van Bemmelen factor (1.72)
+coarse_fraction<-rep(NA,nhor)  ## or 100-sieveno10_r (~0, but files use -99)
+total_nitrigen <- rep(NA,nhor)
+pH_in_buffer <- rep(NA,nhor)
+sadc <- rep(NA,nhor)
+
+SSURGO_vars <-c('NCSA220100','US',unique(taxpartsize),unique(total.depth),
+                paste('SSURGO+SoilGrids:',unique(taxorder),unique(compname)),
+                'Sandhills,NC','US',yy,xx,unique(taxorder),color,unique(albedodry.r),
+                dlyavgpotet_r,drainaige_rate,unique(CurveNumber),mineralization_factor,
+                photosynthesis_factor,pH_determ_code,P_determ_code,K_determ_code,
+                list(hzdepb.r),list(desgnmaster),list(round(wfifteenbar.r/100,3)),
+                list(round(wthirdbar.r/100,3)), list(round(wsatiated.r/100,3)),
+                list(root_growth_factor),list(ksat.r*0.36),list(dbthirdbar.r),
+                list(soc_from_om),list(claytotal.r),list(silttotal.r),
+                list(coarse_fraction),list(total_nitrigen),
+                list(ph1to1h2o.r),list(pH_in_buffer),list(cec7.r),list(sadc))
+#Verify units!!
+```
+
+Add 
+```{r}
+#Base soil table from soilGrids
+soilgrids_sol <- read_sol('E:/PhD_research/Chapter2/inputs/SoilGrids-for-DSSAT/US.SOL', id_soil = 'US02839443')
+DSSAT_vars <- names(soilgrids_sol)
+DSSAT_SSURGO_vars <-data.frame(vars = DSSAT_vars,vals_ssurgo = as.character(SSURGO_vars))
+new_soil<- soilgrids_sol
+for (vv in DSSAT_vars){
+  index <- which(DSSAT_SSURGO_vars$vars==vv)
+  new_soil[[vv]] <- list(SSURGO_vars[[index]])
+  new_soil[[vv]] <- ifelse(is.na(new_soil[[vv]]), soilgrids_sol[[vv]],new_soil[[vv]])
+  nly<-length(new_soil[[vv]][[1]])
+  if (nly>1){
+    new_soil[[vv]][[1]] <- ifelse(is.na(new_soil[[vv]][[1]]), soilgrids_sol[[vv]][[1]],new_soil[[vv]][[1]])
+  }
+}
+
+write_sol(new_soil,title='ExpKinston2021_SoilGrids+SSURGO','NC.SOL')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Add 
+```{r}
+block1 <- new_soil
+
+
+
+```
+
+Add 
+```{r}
+soil_sampling <- read_sheet("https://docs.google.com/spreadsheets/d/1GQ-LH9W429bldzLuggyhhfnlO8Ga26VPBAIGyZzcJyQ/edit#gid=0")
+
+
+#SA004: Mehlich
+SM_XX<- 'SA004'  #SMHB,SMPX,SMKE
+```
+
+Add 
+```{r}
+depth <-100 ## arbitrary, look at SSURGO
+famSCS <-'Pocalla'
+lon<--77.617
+lat<-35.28
+
+soilfile <- paste('NCSU','KI','.SOL')
+sink(soilfile) 
+#Line 0
+line0 <- "*SOILS: NCSU + KINSTON, NC "
+#Line 1
+texture <- c('Loamy sand'='LOSA','Sand'='SA')
+
+i<-1
+id <- paste0('*NCSU_KIN_21_',as.character(i))
+line1 <- paste(id,'NCSU',as.character(texture[soil_sampling$usdaclass[i]]),as.character(soil_sampling$depth),'Block',as.character(i))
+
+#Line 2
+line2a <- paste('@SITE  COUNTRY LAT LONG SCSFamily')
+line2b <- paste('CaswellFarm Kinston,NC',lat,lon,famSCS)
+
+#Line 3
+line3a <- paste('@ SCOM SALB SLU1 SLDR SLRO SLNF SLPF SMHB SMPX SMKE')
+basic_fill <- rep(-99,10)
+
+line3b <- paste(as.character(basic_fill),collapse=" ")
+
+#Line 5
+
+#Line 6
+
+#Line 7
+```

@@ -1,0 +1,97 @@
+*SOILS: General DSSAT Soil Input File
+
+*NCKI210100  US          LS       203  SSURGO+SoilGrids: Ultisols Pocalla
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ Kinston,NC  US             35.281 -77.617 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A  .064   .16   .35     1 33.12  1.65   .44     7   9.2   -99   .12   5.5   -99   2.4   -99
+    58     E  .041  .131   .36   .85 33.12  1.65   .15     5  16.5   -99   .09   5.5   -99   1.1   -99
+    91     B  .124  .216   .36    .7 10.08  1.63   .15  17.5  15.3   -99   .07     5   -99   9.1   -99
+   117     E  .047  .139   .33    .5 33.12  1.73     0     6  16.3   -99   .06     5   -99   9.6   -99
+   203     B  .143  .222   .34   .38  3.24  1.63     0  22.5  17.9   -99   .05     5   -99   9.6   -99
+
+*NCKI210001  US          S        203  Block1: Ultisols Pocalla
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ Kinston,NC  US             35.281 -77.617 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A   .03    .1   .35     1 33.12  1.65  .325   4.2   6.2   -99   .12   5.7   -99   3.6   -99
+    58     E  .041  .131   .36   .85 33.12  1.65   .15     5  16.5   -99   .09   5.5   -99   1.1   -99
+    91     B  .124  .216   .36    .7 10.08  1.63   .15  17.5  15.3   -99   .07     5   -99   9.1   -99
+   117     E  .047  .139   .33    .5 33.12  1.73     0     6  16.3   -99   .06     5   -99   9.6   -99
+   203     B  .143  .222   .34   .38  3.24  1.63     0  22.5  17.9   -99   .05     5   -99   9.6   -99
+
+*NCKI210002  US          S        203  Block2: Ultisols Pocalla
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ Kinston,NC  US             35.281 -77.617 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A   .03    .1   .35     1 33.12  1.65  .348   4.6   5.8   -99   .12   5.2   -99   3.1   -99
+    58     E  .041  .131   .36   .85 33.12  1.65   .15     5  16.5   -99   .09   5.5   -99   1.1   -99
+    91     B  .124  .216   .36    .7 10.08  1.63   .15  17.5  15.3   -99   .07     5   -99   9.1   -99
+   117     E  .047  .139   .33    .5 33.12  1.73     0     6  16.3   -99   .06     5   -99   9.6   -99
+   203     B  .143  .222   .34   .38  3.24  1.63     0  22.5  17.9   -99   .05     5   -99   9.6   -99
+
+*NCKI210003  US          S        203  Block3: Ultisols Pocalla
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ Kinston,NC  US             35.281 -77.617 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A   .03   .11   .35     1 33.12  1.65  .383   5.4   6.2   -99   .12   5.7   -99   4.4   -99
+    58     E  .041  .131   .36   .85 33.12  1.65   .15     5  16.5   -99   .09   5.5   -99   1.1   -99
+    91     B  .124  .216   .36    .7 10.08  1.63   .15  17.5  15.3   -99   .07     5   -99   9.1   -99
+   117     E  .047  .139   .33    .5 33.12  1.73     0     6  16.3   -99   .06     5   -99   9.6   -99
+   203     B  .143  .222   .34   .38  3.24  1.63     0  22.5  17.9   -99   .05     5   -99   9.6   -99
+
+*NCKI210004  US          LS       203  Block4: Ultisols Pocalla
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ Kinston,NC  US             35.281 -77.617 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A   .04   .12   .35     1 33.12  1.65   .47   5.8   8.1   -99   .12   6.1   -99   5.5   -99
+    58     E  .041  .131   .36   .85 33.12  1.65   .15     5  16.5   -99   .09   5.5   -99   1.1   -99
+    91     B  .124  .216   .36    .7 10.08  1.63   .15  17.5  15.3   -99   .07     5   -99   9.1   -99
+   117     E  .047  .139   .33    .5 33.12  1.73     0     6  16.3   -99   .06     5   -99   9.6   -99
+   203     B  .143  .222   .34   .38  3.24  1.63     0  22.5  17.9   -99   .05     5   -99   9.6   -99
+
+*NCKI210005  US          S        203  Average Blocks 1-4: Ultisols Pocalla
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ Kinston,NC  US             35.281 -77.617 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A   .03   .11   .35     1 33.12  1.65  .381     5   6.6   -99   .12   5.7   -99   4.2   -99
+    58     E  .041  .131   .36   .85 33.12  1.65   .15     5  16.5   -99   .09   5.5   -99   1.1   -99
+    91     B  .124  .216   .36    .7 10.08  1.63   .15  17.5  15.3   -99   .07     5   -99   9.1   -99
+   117     E  .047  .139   .33    .5 33.12  1.73     0     6  16.3   -99   .06     5   -99   9.6   -99
+   203     B  .143  .222   .34   .38  3.24  1.63     0  22.5  17.9   -99   .05     5   -99   9.6   -99
+
+*NCSA220100  US          S        203  SSURGO+SoilGrids: Ultisols Candor
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ SandhillsNC US             35.184 -79.679 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A  .029  .092   .34     1 33.12  1.65   .44   2.5   1.5   -99   .12   4.8   -99     2   -99
+    69     E  .022   .08   .35   .85 33.12  1.65   .15   2.5   1.5   -99   .09   4.8   -99    .8   -99
+    99     B  .068  .162   .35    .7 33.12  1.63   .15     9   8.8   -99   .07   4.6   -99   1.5   -99
+   147     E   .02  .076   .33    .5 33.12  1.65   .15   2.5   1.5   -99   .06   4.6   -99    .8   -99
+   203     B  .132  .212   .38   .38  3.24  1.48   .15  22.5  17.9   -99   .05   4.6   -99   2.8   -99
+
+*NCSA220001  US          S        203  SSURGO+SoilGrids+TextpHSampled: Ultisols Candor
+@SITE        COUNTRY          LAT     LONG SCS FAMILY
+ SandhillsNC US             35.184 -79.679 Ultisols
+@ SCOM  SALB  SLU1  SLDR  SLRO  SLNF  SLPF  SMHB  SMPX  SMKE
+    BK    .3     6    .5    67     1     1 SA001 SA001 SA001
+@  SLB  SLMH  SLLL  SDUL  SSAT  SRGF  SSKS  SBDM  SLOC  SLCL  SLSI  SLCF  SLNI  SLHW  SLHB  SCEC  SADC
+    20     A  .029  .092   .34     1 33.12  1.65   .44   2.5   1.5   -99   .12   4.8   -99     2   -99
+    69     E  .022   .08   .35   .85 33.12  1.65   .15   2.5   1.5   -99   .09   4.8   -99    .8   -99
+    99     B  .068  .162   .35    .7 33.12  1.63   .15     9   8.8   -99   .07   4.6   -99   1.5   -99
+   147     E   .02  .076   .33    .5 33.12  1.65   .15   2.5   1.5   -99   .06   4.6   -99    .8   -99
+   203     B  .132  .212   .38   .38  3.24  1.48   .15  22.5  17.9   -99   .05   4.6   -99   2.8   -99
